@@ -14,3 +14,7 @@ func title(s string) string {
 
 	return string(append([]rune{unicode.ToUpper(r[0])}, r[1:]...))
 }
+
+func generatedFilename(prefix, name string) string {
+	return fmt.Sprintf("zz_generated.%s.%s.go", prefix, name)
+}

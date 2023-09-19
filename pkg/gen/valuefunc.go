@@ -17,8 +17,10 @@ limitations under the License.
 package gen
 
 import (
+	"bytes"
 	"github.com/dave/jennifer/jen"
 	"os"
+	"path/filepath"
 
 	//nolint:depguard
 	"sigs.k8s.io/controller-tools/pkg/genall"
@@ -68,7 +70,7 @@ func (vf *ValueFunc) isExported() bool {
 }
 
 var ValueFuncMarkerDefinition = markers.Must( //nolint:gochecknoglobals
-	markers.MakeDefinition(markerName(DIMarkerName, ValueFuncMarkerName), markers.DescribesPackage, ValueFunc{}), //nolint:exhaustruct,exhaustivestruct
+	markers.MakeDefinition(markerName(DIMarkerName, ValueFuncMarkerName), markers.DescribesPackage, ValueFunc{}), //nolint:lll,exhaustruct,exhaustivestruct
 )
 
 // +controllertools:marker:generateHelp:category="object"
@@ -125,16 +127,15 @@ func (ValueFuncGenerator) Generate(ctx *genall.GenerationContext) error {
 		// We create one zz_generated.di.container.go per package
 		// Thus we also instantiate one jen.File per package.
 		f := jen.NewFilePath(root.PkgPath) //nolint:varnamelen
-		varDefinitions := make([]jen.Code, 0)
 
 		for _, markerValue := range markerValues {
 			valueFunc := markerValue.(ValueFunc) //nolint:forcetypeassert
 
 			var typeStt *jen.Statement
 			if valueFunc.TypeImport != nil {
-				typeStt = jen.Qual(*valueFunc.TypeImport, valueFunc.Name)
+				typeStt = jen.Qual(*valueFunc.TypeImport, title(valueFunc.Type))
 			} else {
-				typeStt = jen.Id(valueFunc.Name)
+				typeStt = jen.Id(valueFunc.Type)
 			}
 
 			var containerStt *jen.Statement
@@ -146,8 +147,8 @@ func (ValueFuncGenerator) Generate(ctx *genall.GenerationContext) error {
 				containerStt = jen.Qual(diPkgPath, "DefaultContainer")
 			}
 
-			// func InsertName(options ...di.Option) di.Value[inserttypeimport.InsertType] {
-			//  	return di.MustWithOptions[inserttypeimport.InsertType](InsertContainer,"InsertName", options...)
+			// func Name(options ...di.Option) di.Value[typeimport.Type] {
+			//  	return di.MustWithOptions[typeimport.Type](ContainerName, "Name", options...)
 			// }
 			f.Func().Id(title(valueFunc.nameWithExportedCasing())).
 				Params(jen.Id("options").Op(" ...").Qual(diPkgPath, "Option")).
@@ -161,19 +162,23 @@ func (ValueFuncGenerator) Generate(ctx *genall.GenerationContext) error {
 							jen.Id("options").Op("..."),
 						),
 				)
-
 		}
 
-		f.Var().Defs(varDefinitions...)
-
-		if err = f.Render(os.Stdout); err != nil {
+		buffer := &bytes.Buffer{}
+		if err = f.Render(buffer); err != nil {
 			return err //nolint:wrapcheck
+		}
+
+		filename := filepath.Join(filepath.Dir(root.GoFiles[0]), generatedFilename(DIMarkerName, ValueFuncMarkerName))
+
+		if err = os.WriteFile(filename, buffer.Bytes(), 0644); err != nil {
+			return err
 		}
 	}
 
 	return nil
 }
 
-//+di:valuefunc:name=valueString,type=string
+// //+di:valuefunc:name=valueString,type=string
 
-//+di:valuefunc:container=insertContainer,name=insertName,type=InsertName,typeImport=github.com/alexandremahdhaoui/insert-type-import
+// //+di:valuefunc:container=ContainerName,name=name,type=type,typeImport=github.com/alexandremahdhaoui/type-import

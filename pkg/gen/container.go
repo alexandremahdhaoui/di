@@ -2,8 +2,10 @@ package gen
 
 //nolint:depguard
 import (
+	"bytes"
 	"github.com/dave/jennifer/jen"
 	"os"
+	"path/filepath"
 	"sigs.k8s.io/controller-tools/pkg/genall"
 	"sigs.k8s.io/controller-tools/pkg/markers"
 )
@@ -35,7 +37,8 @@ func (c *Container) isExported() bool {
 }
 
 var ContainerMarkerDefinition = markers.Must( //nolint:gochecknoglobals
-	markers.MakeDefinition(markerName(DIMarkerName, ContainerMarkerName), markers.DescribesPackage, Container{}), //nolint:exhaustruct,exhaustivestruct
+	markers.MakeDefinition(markerName(DIMarkerName, ContainerMarkerName),
+		markers.DescribesPackage, Container{}), //exhaustruct,exhaustivestruct
 )
 
 // +controllertools:marker:generateHelp:category="object"
@@ -91,7 +94,14 @@ func (ContainerGenerator) Generate(ctx *genall.GenerationContext) error {
 
 		f.Var().Defs(varDefinitions...)
 
-		if err = f.Render(os.Stdout); err != nil {
+		buffer := &bytes.Buffer{}
+		if err = f.Render(buffer); err != nil {
+			return err //nolint:wrapcheck
+		}
+
+		filename := filepath.Join(filepath.Dir(root.GoFiles[0]), generatedFilename(DIMarkerName, ContainerMarkerName))
+
+		if err = os.WriteFile(filename, buffer.Bytes(), 0644); err != nil { //nolint:gofumpt
 			return err //nolint:wrapcheck
 		}
 	}
@@ -99,6 +109,6 @@ func (ContainerGenerator) Generate(ctx *genall.GenerationContext) error {
 	return nil
 }
 
-//+di:container:name=container0,exported=true
+// //+di:container:name=container0,exported=true
 
-//+di:container:name=container1,exported=false
+// //+di:container:name=container1,exported=false
