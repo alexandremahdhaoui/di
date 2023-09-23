@@ -31,8 +31,10 @@ type (
 	}
 
 	ObjRef struct {
-		Ident  Ident
-		Import PkgImport
+		// Ident of the object we are referencing
+		Ident Ident
+		// PkgIdent (optional) is the identity referencing a PkgImport
+		PkgIdent *Ident
 	}
 
 	// Decl example: var Container = di.New("container")

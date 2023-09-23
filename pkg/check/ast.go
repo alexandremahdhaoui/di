@@ -36,7 +36,7 @@ func VisitAST() {
 		root.NeedTypesInfo()
 		root.NeedSyntax()
 
-		for i, file := range root.GoFiles { //nolint:varnamelen
+		for i, file := range root.GoFiles {
 			node := root.Syntax[i]
 			meta := astutil.Meta{
 				Pkg:      root.Package.Name,

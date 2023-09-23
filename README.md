@@ -4,13 +4,16 @@ Simple dependency injection types for Go.
 
 # TODO
 
-- Migrate pkg/gen -> valuefunc & container Generate() func to use genall internals [genall/output.go#L145](/var/home/alex/go/pkg/mod/sigs.k8s.io/controller-tools@v0.13.0/pkg/genall/output.go)
-- Create di-check binary: visit ast to build the dependency graph
-  - https://astexplorer.net/ 
-  - https://yuroyoro.github.io/goast-viewer/
-  - https://www.zupzup.org/go-ast-traversal/index.html
+- The only way to ensure immutability is to enforce users to use structs that implements DeepCopy.
+- Figure out how to Build a container. This is especially important when consumers of a Value are unaware which
+  containers are declared in a Pkg or when producers uses private containers that needs to be built before 
+  - A bad pattern would be creating a pointer to the container from the container itself to build the container outside
+    the repo.
+  - Another way would be to pass the state of the container in the di.Value[T]. But this is also a dirty solution.
+    Because Value[T] shouldn't be aware of any constructions related to Container.
+  - Finaly, Values could implement a IsDirty function which returns a boolean indicator.
 
-## CLIs
+## Command line tools
 
 In `cmd/`.
 

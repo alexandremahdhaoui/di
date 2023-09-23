@@ -59,7 +59,6 @@ func ContainerDeclFromNode(node ast.Node, meta Meta) []Decl {
 		}
 
 		for _, spec := range varSpecs(node) {
-
 			// TODO: check the content of the spec.Value[...] to figure out if it's a ContainerDecl or not
 			//  Or: Decl owns a pointer to the Values of the declaration
 
