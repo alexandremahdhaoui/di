@@ -26,3 +26,15 @@ In `cmd/`.
 - `di-gen`
   - Generate the functions that are used to Query/Set elements in a specific container.
   - Uses the default container by default.
+
+## Types
+
+| Type      | Description                                                                                                                                                                                                                                                                              |
+|-----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Container | A container is a data structure holding Values of T.<br/> Container can hold any kind of data. To eventually achieve immutability, the Container implements a Build() function that should be called before accessing data and after setting data.<br/> Container is not a generic type. |
+| Value[T]  | Value of T is a generic type used to convey data from and outside a Container                                                                                                                                                                                                            |
+
+## Best effort eventual immutability
+
+Because our system is unable to assert immutability, we make use of `di-check` a binary traversing your code and
+constructing a graph of dependencies between the different part of your code that consume and produce Values[T].
