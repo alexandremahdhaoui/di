@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package main
 
 import (
@@ -116,25 +117,25 @@ func main() {
 	whichLevel := 0
 	showVersion := false
 
-	cmd := &cobra.Command{
-		Use:   "controller-gen",
-		Short: "Generate Kubernetes API extension resources and code.",
-		Long:  "Generate Kubernetes API extension resources and code.",
-		Example: `	# Generate RBAC manifests and crds for all types under apis/,
-	# outputting crds to /tmp/crds and everything else to stdout
-	controller-gen rbac:roleName=<role name> crd paths=./apis/... output:crd:dir=/tmp/crds output:stdout
+	cmd := &cobra.Command{ //nolint:exhaustruct,exhaustivestruct
+		Use:   "di-gen",
+		Short: "Generate Dependency Injection code.",
+		Long:  "Generate Dependency Injection code.",
+		Example: `	# Generate ValueFunc
+	# Generate containers and output generation to /tmp/containers & stdout
+	di-gen container  paths=./... output:crd:dir=/tmp/containers output:stdout
 
-	# Generate deepcopy/runtime.Object implementations for a particular file
-	controller-gen object paths=./apis/v1beta1/some_types.go
-
-	# Generate OpenAPI v3 schemas for API packages and merge them into existing CRD manifests
-	controller-gen schemapatch:manifests=./manifests output:dir=./manifests paths=./pkg/apis/... 
+	# Generate valuefunc implementations for a particular file
+	di-gen valuefunc paths=./some_file.go
 
 	# Run all the generators for a given project
-	controller-gen paths=./apis/...
+	di-gen paths=./...
 
-	# Explain the markers for generating CRDs, and their arguments
-	controller-gen crd -ww
+	# Explain the markers for generating containers, and their arguments
+	di-gen container -ww
+
+	# Explain the markers for generating Value Functions, and their arguments
+	di-gen valuefunc -ww
 `,
 		RunE: func(c *cobra.Command, rawOpts []string) error {
 			// print version if asked for it

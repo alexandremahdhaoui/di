@@ -14,12 +14,39 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package gen
+package astutil
 
-const (
-	diPkgPath = "github.com/alexandremahdhaoui/di"
+import "go/ast"
 
-	DIMarkerName        = "di"
-	ContainerMarkerName = "container"
-	ValueFuncMarkerName = "valuefunc"
+type (
+	Ident string
+
+	Meta struct {
+		// Pkg is the package name where the object is defined
+		Pkg string
+		// Filepath where the object is defined
+		Filepath string
+		// Module in which the object is defined
+		Module string
+	}
+
+	ObjRef struct {
+		Ident  Ident
+		Import PkgImport
+	}
+
+	// Decl example: var Container = di.New("container")
+	Decl struct {
+		Meta  Meta
+		Ident Ident
+	}
+
+	Usage struct {
+		Meta   Meta
+		ObjRef ObjRef
+	}
 )
+
+func (i Ident) Exported() bool {
+	return ast.IsExported(string(i))
+}

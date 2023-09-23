@@ -14,12 +14,4 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package gen
-
-const (
-	diPkgPath = "github.com/alexandremahdhaoui/di"
-
-	DIMarkerName        = "di"
-	ContainerMarkerName = "container"
-	ValueFuncMarkerName = "valuefunc"
-)
+package astutil

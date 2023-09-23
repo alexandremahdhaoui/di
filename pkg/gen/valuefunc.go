@@ -19,9 +19,6 @@ package gen
 import (
 	"bytes"
 	"github.com/dave/jennifer/jen"
-	"os"
-	"path/filepath"
-
 	//nolint:depguard
 	"sigs.k8s.io/controller-tools/pkg/genall"
 	"sigs.k8s.io/controller-tools/pkg/markers" //nolint:depguard
@@ -98,7 +95,13 @@ var ValueFuncMarkerDefinition = markers.Must( //nolint:gochecknoglobals
 //
 //   - Exported indicates if the ValueFunc should be exported or not.
 //     The ValueFunc is exported by default.
-type ValueFuncGenerator struct{}
+type ValueFuncGenerator struct {
+	// HeaderFile specifies the header text (e.g. license) to prepend to generated files.
+	HeaderFile string `marker:",optional"`
+
+	// Year specifies the year to substitute for " YEAR" in the header file.
+	Year string `marker:",optional"`
+}
 
 func (ValueFuncGenerator) RegisterMarkers(into *markers.Registry) error {
 	if err := markers.RegisterAll(into, ValueFuncMarkerDefinition); err != nil {
@@ -110,7 +113,7 @@ func (ValueFuncGenerator) RegisterMarkers(into *markers.Registry) error {
 	return nil
 }
 
-func (ValueFuncGenerator) Generate(ctx *genall.GenerationContext) error {
+func (g ValueFuncGenerator) Generate(ctx *genall.GenerationContext) error {
 	for _, root := range ctx.Roots {
 		root.NeedTypesInfo()
 
@@ -166,12 +169,21 @@ func (ValueFuncGenerator) Generate(ctx *genall.GenerationContext) error {
 
 		buffer := &bytes.Buffer{}
 		if err = f.Render(buffer); err != nil {
+			root.AddError(err)
+
 			return err //nolint:wrapcheck
 		}
 
-		filename := filepath.Join(filepath.Dir(root.GoFiles[0]), generatedFilename(DIMarkerName, ValueFuncMarkerName))
+		if err = generateFile(generateFileOptions{
+			buffer:     buffer,
+			ctx:        ctx,
+			filename:   generatedFilename(DIMarkerName, ValueFuncMarkerName),
+			headerFile: g.HeaderFile,
+			headerYear: g.Year,
+			root:       root,
+		}); err != nil {
+			root.AddError(err)
 
-		if err = os.WriteFile(filename, buffer.Bytes(), 0644); err != nil {
 			return err
 		}
 	}
@@ -179,6 +191,6 @@ func (ValueFuncGenerator) Generate(ctx *genall.GenerationContext) error {
 	return nil
 }
 
-// //+di:valuefunc:name=valueString,type=string
+//+di:valuefunc:name=valueString,type=string
 
-// //+di:valuefunc:container=ContainerName,name=name,type=type,typeImport=github.com/alexandremahdhaoui/type-import
+//+di:valuefunc:container=Container0,name=name,type=type,typeImport=github.com/alexandremahdhaoui/type-import

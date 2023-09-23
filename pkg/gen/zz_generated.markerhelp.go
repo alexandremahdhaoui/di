@@ -31,7 +31,16 @@ func (ContainerGenerator) Help() *markers.DefinitionHelp {
 			Summary: "Conveniently generates a new Container ",
 			Details: "Fields: \n - Name (string) identifies the container to be created. \n - Exported (optional bool) indicates if the Container should be exported or not. The Container is not exported by default.",
 		},
-		FieldHelp: map[string]markers.DetailedHelp{},
+		FieldHelp: map[string]markers.DetailedHelp{
+			"HeaderFile": {
+				Summary: "specifies the header text (e.g. license) to prepend to generated files.",
+				Details: "",
+			},
+			"Year": {
+				Summary: "specifies the year to substitute for \" YEAR\" in the header file.",
+				Details: "",
+			},
+		},
 	}
 }
 
@@ -42,6 +51,15 @@ func (ValueFuncGenerator) Help() *markers.DefinitionHelp {
 			Summary: "Creates a single func to conveniently access a di.Value. This marker is also used by the di-checker to create the dependency graph. ",
 			Details: "Fields: \n - Name (string) identifies the func that will be used to access the defined value. \n - Container (optional string) specifies the di.Container's Name that will be used to store the Value. Container should always resolve to a di.Container defined in the current pkg. In other words, the \"consumer\" of a di.Value, defines both the di.Value and the di.Container in the same package where the di.Value is consumed. It's the job of the \"producer\" of the injectable value to import the ValueFunc from the getter package. In use cases where an interface is necessary to decouple \"consumer\" and the \"producer\", it is a best practice to create an \"interface package\" that defines both di.Value & di.Container, which can be imported by the \"consumers\" and the \"producers\" (!! Concurrent producers should NEVER be allowed: greatly reduce the side effects) \n - Type (string) defines the type T to the Value[T]. \n - TypeImport (optional string) defines package import for the specific type. \n - Exported indicates if the ValueFunc should be exported or not. The ValueFunc is exported by default.",
 		},
-		FieldHelp: map[string]markers.DetailedHelp{},
+		FieldHelp: map[string]markers.DetailedHelp{
+			"HeaderFile": {
+				Summary: "specifies the header text (e.g. license) to prepend to generated files.",
+				Details: "",
+			},
+			"Year": {
+				Summary: "specifies the year to substitute for \" YEAR\" in the header file.",
+				Details: "",
+			},
+		},
 	}
 }

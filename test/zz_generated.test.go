@@ -14,12 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package gen
+package test
 
-const (
-	diPkgPath = "github.com/alexandremahdhaoui/di"
-
-	DIMarkerName        = "di"
-	ContainerMarkerName = "container"
-	ValueFuncMarkerName = "valuefunc"
+import (
+	"github.com/alexandremahdhaoui/di"
+	diAstUtil "github.com/alexandremahdhaoui/di/pkg/astutil"
+	"go/ast"
 )
+
+var Container = di.New("NewContainer")
+
+func ValueFunc(options ...di.Option) di.Value[map[*diAstUtil.Meta]ast.Node] {
+	return di.MustWithOptions[map[*diAstUtil.Meta]ast.Node](Container, "ValueFunc", options...)
+}

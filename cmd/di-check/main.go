@@ -13,13 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+package main
 
-package gen
-
-const (
-	diPkgPath = "github.com/alexandremahdhaoui/di"
-
-	DIMarkerName        = "di"
-	ContainerMarkerName = "container"
-	ValueFuncMarkerName = "valuefunc"
+import (
+	"github.com/alexandremahdhaoui/di/pkg/check" //nolint:depguard
 )
+
+func main() {
+	check.VisitAST()
+}

@@ -1,11 +1,25 @@
+/*
+Copyright 2023 Alexandre Mahdhaoui.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package gen
 
 //nolint:depguard
 import (
 	"bytes"
 	"github.com/dave/jennifer/jen"
-	"os"
-	"path/filepath"
 	"sigs.k8s.io/controller-tools/pkg/genall"
 	"sigs.k8s.io/controller-tools/pkg/markers"
 )
@@ -51,7 +65,13 @@ var ContainerMarkerDefinition = markers.Must( //nolint:gochecknoglobals
 //
 //   - Exported (optional bool) indicates if the Container should be exported or not.
 //     The Container is not exported by default.
-type ContainerGenerator struct{}
+type ContainerGenerator struct {
+	// HeaderFile specifies the header text (e.g. license) to prepend to generated files.
+	HeaderFile string `marker:",optional"`
+
+	// Year specifies the year to substitute for " YEAR" in the header file.
+	Year string `marker:",optional"`
+}
 
 func (ContainerGenerator) RegisterMarkers(into *markers.Registry) error {
 	if err := markers.RegisterAll(into, ContainerMarkerDefinition); err != nil {
@@ -63,7 +83,7 @@ func (ContainerGenerator) RegisterMarkers(into *markers.Registry) error {
 	return nil
 }
 
-func (ContainerGenerator) Generate(ctx *genall.GenerationContext) error {
+func (g ContainerGenerator) Generate(ctx *genall.GenerationContext) error {
 	for _, root := range ctx.Roots {
 		root.NeedTypesInfo()
 
@@ -96,19 +116,28 @@ func (ContainerGenerator) Generate(ctx *genall.GenerationContext) error {
 
 		buffer := &bytes.Buffer{}
 		if err = f.Render(buffer); err != nil {
-			return err //nolint:wrapcheck
+			root.AddError(err)
+
+			return err
 		}
 
-		filename := filepath.Join(filepath.Dir(root.GoFiles[0]), generatedFilename(DIMarkerName, ContainerMarkerName))
+		if err = generateFile(generateFileOptions{
+			buffer:     buffer,
+			ctx:        ctx,
+			filename:   generatedFilename(DIMarkerName, ContainerMarkerName),
+			headerFile: g.HeaderFile,
+			headerYear: g.Year,
+			root:       root,
+		}); err != nil {
+			root.AddError(err)
 
-		if err = os.WriteFile(filename, buffer.Bytes(), 0644); err != nil { //nolint:gofumpt
-			return err //nolint:wrapcheck
+			return err
 		}
 	}
 
 	return nil
 }
 
-// //+di:container:name=container0,exported=true
+//+di:container:name=container0,exported=true
 
-// //+di:container:name=container1,exported=false
+//+di:container:name=container1,exported=false
