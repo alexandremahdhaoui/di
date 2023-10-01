@@ -17,6 +17,7 @@ limitations under the License.
 package astutil
 
 import (
+	"github.com/alexandremahdhaoui/di/pkg/diutil"
 	"go/ast"
 	"sync"
 )
@@ -28,15 +29,65 @@ type ValuefuncDecl struct {
 	ContainerRef ObjRef
 }
 
-// findFnCalls
-// TODO: Implement me
-func findFnCalls(fn *ast.FuncDecl) []ObjRef {
+func findContainerRef(fn *ast.FuncDecl, diPkgIdent Ident) (ObjRef, bool) {
+	for _, v := range fn.Body.List {
+		switch stmt := v.(type) {
+		case *ast.ReturnStmt:
+			for _, res := range stmt.Results {
+				switch expr := res.(type) {
+				case *ast.CallExpr:
+					// We check if the called fun is a ref to a di function that yields a Value (so Get, Must...)
+					indexExpr, ok := expr.Fun.(*ast.IndexExpr)
+					if !ok {
+						continue
+					}
 
-	return []ObjRef{{}, {}}
+					switch expr := indexExpr.X.(type) {
+					// Case where DI is normally imported
+					case *ast.SelectorExpr:
+						objRef, ok := exprToObjRef(expr)
+						if !ok {
+							continue
+						}
+
+						if objRef.PkgIdent == nil {
+							// We move on if diPkgIdent is not a dot import
+							if diPkgIdent.String() == diutil.DotImportIdent {
+								continue
+							}
+						} else {
+							// We move on if the pkg does not refer to DI
+							if objRef.PkgIdent.String() != diPkgIdent.String() {
+								continue
+							}
+						}
+
+						fn := objRef.Ident.String()
+						// we move on if the function does not retrieve a value.
+						if fn != diutil.GetIdent && fn != diutil.MustIdent && fn != diutil.MustWithOptionsIdent {
+							continue
+						}
+					case *ast.Ident:
+						if expr.String() != diPkgIdent.String() {
+							continue
+						}
+					default:
+						continue
+					}
+
+					// ContainerRef is the first arg in the func call
+					return exprToObjRef(expr.Args[0])
+				default:
+					continue
+				}
+			}
+		default:
+			continue
+		}
+	}
+	return ObjRef{}, false
 }
-func findContainerRef(fn *ast.FuncDecl) (ObjRef, error) {
-	return ObjRef{}, nil
-}
+
 func findReturnTypes(fn *ast.FuncDecl) []ObjRef {
 	sl := make([]ObjRef, 0)
 
@@ -46,69 +97,61 @@ func findReturnTypes(fn *ast.FuncDecl) []ObjRef {
 			continue
 		}
 
-		sel, ok := index.X.(*ast.SelectorExpr)
-		if !ok {
-			ident, ok := index.X.(*ast.Ident)
-			if !ok {
-				continue
-			}
-
-			sl = append(sl, ObjRef{
-				Ident: Ident(ident.Name),
-			})
-		}
-
-		if sel.Sel == nil {
-			continue
-		}
-
-		x, ok := sel.X.(*ast.Ident)
+		objRef, ok := exprToObjRef(index.X)
 		if !ok {
 			continue
 		}
 
-		pkgIdent := Ident(x.Name)
-		sl = append(sl, ObjRef{
-			Ident:    Ident(sel.Sel.Name),
-			PkgIdent: &pkgIdent,
-		})
+		sl = append(sl, objRef)
 	}
 
 	return sl
 }
 
-// TODO: Implement me!
-func findValueRef(types []ObjRef) (ObjRef, bool) {
-	return types[0], true
+func findValueRef(refs []ObjRef, diPkgIdent Ident) (ObjRef, bool) {
+	for _, ref := range refs {
+		if ref.Ident != diutil.ValueIdent {
+			return ObjRef{}, false
+		}
+
+		if ref.PkgIdent == nil {
+			if diPkgIdent.String() == diutil.DotImportIdent {
+				return ref, true
+			}
+		}
+
+		if ref.PkgIdent.String() == diPkgIdent.String() {
+			return ref, true
+		}
+	}
+
+	return ObjRef{}, false
 }
 
-func hasDIFunc(fnCalls []ObjRef) bool {
-	for _, fnCall := range fnCalls {
-		if fnCall.Ident == "Get" || fnCall.Ident == "Must" || fnCall.Ident == "MustWithOptions" {
-			return true
+func hasValueType(refs []ObjRef, diPkgIdent Ident) bool {
+	for _, ref := range refs {
+		if ref.Ident == diutil.ValueIdent {
+			// Pkg reference ident is nil, so we'll check if DI is dot import
+			if ref.PkgIdent == nil {
+				if diPkgIdent.String() == diutil.DotImportIdent {
+					return true
+				}
+			}
+			// We check if the pkg ref ident matches
+			if ref.PkgIdent.String() == diPkgIdent.String() {
+				return true
+			}
 		}
 	}
 
 	return false
 }
 
-func hasValueType(returnedTypes []ObjRef) bool {
-	for _, returnedType := range returnedTypes {
-		if returnedType.Ident == "Value" {
-			return true
-		}
-	}
-
-	return false
-}
-
-// TODO: Implement
 func ValuefuncDeclFromNode(node ast.Node, meta Meta, diPkgIdent Ident) []ValuefuncDecl {
 	var wg sync.WaitGroup
 
 	q := make(chan ValuefuncDecl)
 	sl := make([]ValuefuncDecl, 0)
-	errs := make([]error, 0)
 
 	go func() {
 		for item := range q {
@@ -131,30 +174,21 @@ func ValuefuncDeclFromNode(node ast.Node, meta Meta, diPkgIdent Ident) []Valuefu
 		if len(returnedTypes) == 0 {
 			return true
 		}
-		if !hasValueType(returnedTypes) { // inspected func does not return a Value[T] type
+		if !hasValueType(returnedTypes, diPkgIdent) { // inspected func does not return a Value[T] type
 			return true
 		}
 
-		fnCalls := findFnCalls(fn)
-		if len(fnCalls) == 0 { // inspected func did not contain a call to a di function (Get, Must, MustWithOptions...)
-			return true
-		}
-		if !hasDIFunc(fnCalls) {
-			return true
-		}
-
-		containerRef, err := findContainerRef(fn)
-		if err != nil {
-			errs = append(errs, err)
-
-			return true
-		}
-
-		valueRef, ok := findValueRef(returnedTypes)
+		containerRef, ok := findContainerRef(fn, diPkgIdent)
 		if !ok {
 			return true
 		}
 
+		valueRef, ok := findValueRef(returnedTypes, diPkgIdent)
+		if !ok {
+			return true
+		}
+
+		wg.Add(1)
 		q <- ValuefuncDecl{
 			Decl: Decl{
 				Meta:  meta,

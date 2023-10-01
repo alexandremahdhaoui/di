@@ -75,7 +75,7 @@ func VisitAST() {
 			}
 
 			if len(cSl) > 0 {
-				debug(cSl)
+				continue
 			}
 		}
 	}

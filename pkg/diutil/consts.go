@@ -19,8 +19,16 @@ package diutil
 const (
 	PkgPath = "github.com/alexandremahdhaoui/di"
 
+	DotImportIdent = "."
+
 	// Ident
 
 	NewContainerIdent = "New"
 	NewValueIdent     = "NewValue"
+
+	ValueIdent = "Value"
+
+	GetIdent             = "Get"
+	MustIdent            = "Must"
+	MustWithOptionsIdent = "MustWithOptions"
 )
