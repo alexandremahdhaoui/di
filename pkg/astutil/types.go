@@ -52,3 +52,7 @@ type (
 func (i Ident) Exported() bool {
 	return ast.IsExported(string(i))
 }
+
+func (i Ident) String() string {
+	return string(i)
+}

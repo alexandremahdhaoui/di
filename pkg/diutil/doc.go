@@ -14,10 +14,4 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package gen
-
-const (
-	DIMarkerName        = "di"
-	ContainerMarkerName = "container"
-	ValueFuncMarkerName = "valuefunc"
-)
+package diutil

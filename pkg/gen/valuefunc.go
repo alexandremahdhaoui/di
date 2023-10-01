@@ -18,6 +18,7 @@ package gen
 
 import (
 	"bytes"
+	"github.com/alexandremahdhaoui/di/pkg/diutil"
 	"github.com/dave/jennifer/jen"
 	//nolint:depguard
 	"sigs.k8s.io/controller-tools/pkg/genall"
@@ -147,17 +148,17 @@ func (g ValueFuncGenerator) Generate(ctx *genall.GenerationContext) error {
 				// in the current package
 				containerStt = jen.Id(*valueFunc.Container)
 			} else {
-				containerStt = jen.Qual(diPkgPath, "DefaultContainer")
+				containerStt = jen.Qual(diutil.PkgPath, "DefaultContainer")
 			}
 
 			// func Name(options ...di.Option) di.Value[typeimport.Type] {
 			//  	return di.MustWithOptions[typeimport.Type](ContainerName, "Name", options...)
 			// }
 			f.Func().Id(title(valueFunc.nameWithExportedCasing())).
-				Params(jen.Id("options").Op(" ...").Qual(diPkgPath, "Option")).
-				Qual(diPkgPath, "Value").Types(typeStt).
+				Params(jen.Id("options").Op(" ...").Qual(diutil.PkgPath, "Option")).
+				Qual(diutil.PkgPath, "Value").Types(typeStt).
 				Block(
-					jen.Return().Qual(diPkgPath, "MustWithOptions").
+					jen.Return().Qual(diutil.PkgPath, "MustWithOptions").
 						Types(typeStt).
 						Call(
 							containerStt,
@@ -190,7 +191,3 @@ func (g ValueFuncGenerator) Generate(ctx *genall.GenerationContext) error {
 
 	return nil
 }
-
-//+di:valuefunc:name=valueString,type=string
-
-//+di:valuefunc:container=Container0,name=name,type=type,typeImport=github.com/alexandremahdhaoui/type-import

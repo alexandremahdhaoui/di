@@ -14,10 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package gen
+package diutil
 
 const (
-	DIMarkerName        = "di"
-	ContainerMarkerName = "container"
-	ValueFuncMarkerName = "valuefunc"
+	PkgPath = "github.com/alexandremahdhaoui/di"
+
+	// Ident
+
+	NewContainerIdent = "New"
+	NewValueIdent     = "NewValue"
 )

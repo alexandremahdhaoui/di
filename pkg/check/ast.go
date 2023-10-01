@@ -17,13 +17,29 @@ limitations under the License.
 package check
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/alexandremahdhaoui/di/pkg/astutil"
+	"github.com/alexandremahdhaoui/di/pkg/diutil"
 	"sigs.k8s.io/controller-tools/pkg/loader"
 )
 
 func debug(v interface{}) {
-	fmt.Printf("%v\n", v) //nolint:forbidigo
+	b, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%s\n", string(b)) //nolint:forbidigo
+}
+
+func DiPkgIdent(pkgImports []astutil.PkgImport) (astutil.Ident, bool) {
+	for _, pkgImport := range pkgImports {
+		if pkgImport.Pkg() == diutil.PkgPath {
+			return pkgImport.Ident(), true
+		}
+	}
+
+	return "", false
 }
 
 func VisitAST() {
@@ -45,12 +61,14 @@ func VisitAST() {
 			}
 
 			pkgImports := astutil.PkgImportFromNode(node)
-			cSl := astutil.ContainerDeclFromNode(node, meta)
-			vSl := astutil.ValuefuncDeclFromNode(node, meta)
 
-			if len(pkgImports) > 0 {
-				debug(pkgImports)
+			diPkgIdent, ok := DiPkgIdent(pkgImports)
+			if !ok {
+				continue
 			}
+
+			cSl := astutil.ContainerDeclFromNode(node, meta, diPkgIdent)
+			vSl := astutil.ValuefuncDeclFromNode(node, meta, diPkgIdent)
 
 			if len(vSl) > 0 {
 				debug(vSl)

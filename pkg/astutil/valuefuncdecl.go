@@ -17,8 +17,8 @@ limitations under the License.
 package astutil
 
 import (
-	"fmt"
 	"go/ast"
+	"sync"
 )
 
 type ValuefuncDecl struct {
@@ -28,10 +28,8 @@ type ValuefuncDecl struct {
 	ContainerRef ObjRef
 }
 
-func debug(v interface{}) {
-	fmt.Printf("%v\n", v) //nolint:forbidigo
-}
-
+// findFnCalls
+// TODO: Implement me
 func findFnCalls(fn *ast.FuncDecl) []ObjRef {
 
 	return []ObjRef{{}, {}}
@@ -79,8 +77,9 @@ func findReturnTypes(fn *ast.FuncDecl) []ObjRef {
 	return sl
 }
 
+// TODO: Implement me!
 func findValueRef(types []ObjRef) (ObjRef, bool) {
-	return ObjRef{}, true
+	return types[0], true
 }
 
 func hasDIFunc(fnCalls []ObjRef) bool {
@@ -103,9 +102,21 @@ func hasValueType(returnedTypes []ObjRef) bool {
 	return false
 }
 
-func ValuefuncDeclFromNode(node ast.Node, meta Meta) []ValuefuncDecl {
+// TODO: Implement
+func ValuefuncDeclFromNode(node ast.Node, meta Meta, diPkgIdent Ident) []ValuefuncDecl {
+	var wg sync.WaitGroup
+
+	q := make(chan ValuefuncDecl)
 	sl := make([]ValuefuncDecl, 0)
 	errs := make([]error, 0)
+
+	go func() {
+		for item := range q {
+			sl = append(sl, item)
+
+			wg.Done()
+		}
+	}()
 
 	ast.Inspect(node, func(node ast.Node) bool {
 		if _, ok := node.(*ast.FuncDecl); !ok {
@@ -113,28 +124,6 @@ func ValuefuncDeclFromNode(node ast.Node, meta Meta) []ValuefuncDecl {
 		}
 
 		fn := node.(*ast.FuncDecl) //nolint:forcetypeassert
-
-		debug("\t---")
-		fmt.Printf("\t%#v\n", fn.Type)
-		fmt.Printf("\t%#v\n", fn.Type.Results)
-		fmt.Printf("\t%#v\n", fn.Type.Results.List[0].Type.(*ast.IndexExpr).X)
-		fmt.Printf("\t%#v\n", fn.Type.Results.List[0].Type.(*ast.IndexExpr).Index)
-		fmt.Printf("\t%#v\n", fn.Type.Results.List[0].Type.(*ast.IndexExpr).X.(*ast.SelectorExpr).X)
-		fmt.Printf("\t%#v\n", fn.Type.Results.List[0].Type.(*ast.IndexExpr).X.(*ast.SelectorExpr).Sel)
-		fmt.Printf("\t%#v\n", fn.Type.Results.List[0].Type.(*ast.IndexExpr).Index)
-
-		debug("\t---")
-		fmt.Printf("\t%#v\n", fn.Type.Results.List[0].Type.(*ast.IndexExpr).X.(*ast.SelectorExpr).X.(*ast.Ident))
-		fmt.Printf("\t%#v\n", fn.Type.Results.List[0].Type.(*ast.IndexExpr).X.(*ast.SelectorExpr).Sel)
-
-		fmt.Printf("\t%#v\n", fn.Type.Results.List[0].Type.(*ast.IndexExpr).Index.(*ast.MapType).Key.(*ast.StarExpr))
-		fmt.Printf("\t%#v\n", fn.Type.Results.List[0].Type.(*ast.IndexExpr).Index.(*ast.MapType).Value)
-
-		debug("\t---")
-		fmt.Printf("\t%#v\n", fn.Body.List[0].(*ast.ReturnStmt).Results[0].(*ast.CallExpr).Fun.(*ast.IndexExpr).X.(*ast.SelectorExpr))
-		fmt.Printf("\t%#v\n", fn.Body.List[0].(*ast.ReturnStmt).Results[0].(*ast.CallExpr).Fun.(*ast.IndexExpr).X.(*ast.SelectorExpr).X)
-		fmt.Printf("\t%#v\n", fn.Body.List[0].(*ast.ReturnStmt).Results[0].(*ast.CallExpr).Fun.(*ast.IndexExpr).X.(*ast.SelectorExpr).Sel)
-		fmt.Printf("\t%#v\n", fn.Body.List[0].(*ast.ReturnStmt).Results[0].(*ast.CallExpr).Fun.(*ast.IndexExpr).Index)
 
 		// return early if func doesn't return any types
 		// returnedTypes must have a Value[T]
@@ -166,17 +155,20 @@ func ValuefuncDeclFromNode(node ast.Node, meta Meta) []ValuefuncDecl {
 			return true
 		}
 
-		sl = append(sl, ValuefuncDecl{
+		q <- ValuefuncDecl{
 			Decl: Decl{
 				Meta:  meta,
 				Ident: Ident(fn.Name.Name),
 			},
 			TypeRef:      valueRef,
 			ContainerRef: containerRef,
-		})
+		}
 
 		return true
 	})
+
+	wg.Wait()
+	close(q)
 
 	return sl
 }

@@ -17,12 +17,25 @@ limitations under the License.
 package astutil
 
 import (
+	"github.com/alexandremahdhaoui/di/pkg/diutil"
 	"go/ast"
 	"go/token"
+	"sync"
 )
 
 func varSpecs(node ast.Node) []*ast.ValueSpec {
+	var wg sync.WaitGroup
+
 	sl := make([]*ast.ValueSpec, 0)
+	q := make(chan *ast.ValueSpec)
+
+	go func() {
+		for item := range q {
+			sl = append(sl, item)
+
+			wg.Done()
+		}
+	}()
 
 	ast.Inspect(node, func(node ast.Node) bool {
 		if node == nil {
@@ -40,18 +53,33 @@ func varSpecs(node ast.Node) []*ast.ValueSpec {
 
 		for _, spec := range genDecl.Specs {
 			if valueSpec, ok := spec.(*ast.ValueSpec); ok {
-				sl = append(sl, valueSpec)
+				wg.Add(1)
+				q <- valueSpec
 			}
 		}
 
 		return true
 	})
 
+	wg.Wait()
+	close(q)
+
 	return sl
 }
 
-func ContainerDeclFromNode(node ast.Node, meta Meta) []Decl {
+func ContainerDeclFromNode(node ast.Node, meta Meta, diPkgIdent Ident) []Decl {
+	var wg sync.WaitGroup
+
 	sl := make([]Decl, 0)
+	q := make(chan Decl)
+
+	go func() {
+		for item := range q {
+			sl = append(sl, item)
+
+			wg.Done()
+		}
+	}()
 
 	ast.Inspect(node, func(node ast.Node) bool {
 		if node == nil {
@@ -59,17 +87,66 @@ func ContainerDeclFromNode(node ast.Node, meta Meta) []Decl {
 		}
 
 		for _, spec := range varSpecs(node) {
-			// TODO: check the content of the spec.Value[...] to figure out if it's a ContainerDecl or not
-			//  Or: Decl owns a pointer to the Values of the declaration
+			for i, variable := range spec.Values {
+				callExpr, ok := variable.(*ast.CallExpr)
+				if !ok {
+					continue
+				}
 
-			sl = append(sl, Decl{
-				Meta:  meta,
-				Ident: Ident(spec.Names[0].Name),
-			})
+				switch v := callExpr.Fun.(type) {
+				// case where diPkgIdent != "." && we have only one var declaration
+				case *ast.SelectorExpr:
+					if v.Sel.Name != diutil.NewContainerIdent {
+						continue
+					}
+
+					x, ok := v.X.(*ast.Ident)
+					if !ok {
+						continue
+					}
+
+					// We check if the pkg ident name is the same than the di pkg ident name that was passed to this func.
+					if x.Name != diPkgIdent.String() {
+						continue
+					}
+				// case where diPkgIdent == "."
+				case *ast.Ident:
+					if v.String() != diutil.NewContainerIdent {
+						continue
+					}
+				default:
+					continue
+				}
+
+				wg.Add(1)
+				q <- Decl{
+					Meta:  meta,
+					Ident: Ident(spec.Names[i].Name),
+				}
+			}
 		}
 
 		return true
 	})
 
-	return sl
+	wg.Wait()
+	close(q)
+
+	return dropDuplicate(sl)
+}
+
+// dropDuplicates takes a slice of Decl, remove any duplicate Ident & return a new slice
+func dropDuplicate(sl []Decl) []Decl {
+	cleaned := make([]Decl, 0)
+
+	m := make(map[Ident]Decl)
+	for _, decl := range sl {
+		m[decl.Ident] = decl
+	}
+
+	for _, decl := range m {
+		cleaned = append(cleaned, decl)
+	}
+
+	return cleaned
 }

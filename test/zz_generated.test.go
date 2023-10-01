@@ -22,8 +22,17 @@ import (
 	"go/ast"
 )
 
-var Container = di.New("NewContainer")
+var (
+	MyContainer  = di.New("MyContainer")
+	MyContainer2 = di.New("MyContainer2")
+)
 
-func ValueFunc(options ...di.Option) di.Value[map[*diAstUtil.Meta]ast.Node] {
-	return di.MustWithOptions[map[*diAstUtil.Meta]ast.Node](Container, "ValueFunc", options...)
+var MyContainer3 = di.New("MyContainer3")
+
+func MyValueFunc(options ...di.Option) di.Value[map[*diAstUtil.Meta]ast.Node] {
+	return di.MustWithOptions[map[*diAstUtil.Meta]ast.Node](MyContainer, "MyValueFunc", options...)
+}
+
+func MyValueFunc2(options ...di.Option) di.Value[map[*diAstUtil.Meta]ast.Node] {
+	return di.MustWithOptions[map[*diAstUtil.Meta]ast.Node](MyContainer, "MyValueFunc2", options...)
 }

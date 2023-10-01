@@ -19,6 +19,7 @@ package gen
 //nolint:depguard
 import (
 	"bytes"
+	"github.com/alexandremahdhaoui/di/pkg/diutil"
 	"github.com/dave/jennifer/jen"
 	"sigs.k8s.io/controller-tools/pkg/genall"
 	"sigs.k8s.io/controller-tools/pkg/markers"
@@ -108,7 +109,7 @@ func (g ContainerGenerator) Generate(ctx *genall.GenerationContext) error {
 			varDefinitions = append(varDefinitions, jen.
 				Id(container.nameWithExportedCasing()).
 				Op("=").
-				Qual(diPkgPath, "New").
+				Qual(diutil.PkgPath, "New").
 				Call(jen.Lit(container.nameWithExportedCasing())))
 		}
 
@@ -137,7 +138,3 @@ func (g ContainerGenerator) Generate(ctx *genall.GenerationContext) error {
 
 	return nil
 }
-
-//+di:container:name=container0,exported=true
-
-//+di:container:name=container1,exported=false

@@ -20,6 +20,7 @@ import (
 	"go/ast"
 	"go/token"
 	"strings"
+	"sync"
 )
 
 type PkgImport struct {
@@ -27,10 +28,12 @@ type PkgImport struct {
 	path string
 }
 
+// Pkg returns the package path, e.g.: "github.com/alexandremahdhaoui/di"
 func (d *PkgImport) Pkg() string {
 	return strings.ReplaceAll(d.path, "\"", "")
 }
 
+// Ident returns the user specified ident for the package or the package's name if no user specified ident was found
 func (d *PkgImport) Ident() Ident {
 	if d.name != nil {
 		return Ident(*d.name)
@@ -41,7 +44,7 @@ func (d *PkgImport) Ident() Ident {
 	return Ident(sl[len(sl)-1])
 }
 
-func NewPkgImport(spec *ast.ImportSpec) *PkgImport {
+func NewPkgImport(spec *ast.ImportSpec) PkgImport {
 	var importName *string
 
 	if spec.Name != nil {
@@ -50,47 +53,71 @@ func NewPkgImport(spec *ast.ImportSpec) *PkgImport {
 	}
 
 	if spec.Path == nil {
-		return nil
+		return PkgImport{}
 	}
 
-	return &PkgImport{
+	return PkgImport{
 		name: importName,
 		path: spec.Path.Value,
 	}
 }
 
 func importSpecs(node ast.Node) []*ast.ImportSpec {
+	var wg sync.WaitGroup
+
+	q := make(chan *ast.ImportSpec)
 	sl := make([]*ast.ImportSpec, 0)
+
+	go func() {
+		for item := range q {
+			sl = append(sl, item)
+
+			wg.Done()
+		}
+	}()
 
 	ast.Inspect(node, func(node ast.Node) bool {
 		if node == nil {
 			return true
 		}
 
-		if _, ok := node.(*ast.GenDecl); !ok {
+		genDecl, ok := node.(*ast.GenDecl)
+		if !ok {
 			return true
 		}
-
-		genDecl := node.(*ast.GenDecl) //nolint:forcetypeassert
 		if genDecl.Tok != token.IMPORT {
 			return true
 		}
 
 		for _, spec := range genDecl.Specs {
 			if importSpec, ok := spec.(*ast.ImportSpec); ok {
-				sl = append(sl, importSpec) //nolint:forcetypeassert
+				wg.Add(1)
+				q <- importSpec
 			}
-
 		}
 
 		return true
 	})
 
+	wg.Wait()
+	close(q)
+
 	return sl
 }
 
 func PkgImportFromNode(node ast.Node) []PkgImport {
+	var wg sync.WaitGroup
+
+	q := make(chan PkgImport)
 	sl := make([]PkgImport, 0)
+
+	go func() {
+		for item := range q {
+			sl = append(sl, item)
+
+			wg.Done()
+		}
+	}()
 
 	ast.Inspect(node, func(node ast.Node) bool {
 		if node == nil {
@@ -98,21 +125,15 @@ func PkgImportFromNode(node ast.Node) []PkgImport {
 		}
 
 		for _, spec := range importSpecs(node) {
-			var name *string
-
-			if spec.Name != nil {
-				s := spec.Name.Name
-				name = &s
-			}
-
-			sl = append(sl, PkgImport{
-				name: name,
-				path: spec.Path.Value,
-			})
+			wg.Add(1)
+			q <- NewPkgImport(spec)
 		}
 
 		return true
 	})
+
+	wg.Wait()
+	close(q)
 
 	return sl
 }
