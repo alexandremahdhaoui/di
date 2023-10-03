@@ -42,6 +42,45 @@ func DiPkgIdent(pkgImports []astutil.PkgImport) (astutil.Ident, bool) {
 	return "", false
 }
 
+// VisitASTF will get pkg imports, Container, Valuefunc declarations and then execute a set of functions
+func VisitASTF(path string, fSlice []func()) error {
+	roots, err := loader.LoadRoots(path)
+	if err != nil {
+		return err
+	}
+
+	for _, root := range roots {
+		root.NeedTypesInfo()
+		root.NeedSyntax()
+
+		for i, file := range root.GoFiles {
+			node := root.Syntax[i]
+			meta := astutil.Meta{
+				Pkg:      root.Package.Name,
+				Filepath: file,
+				Module:   root.PkgPath,
+			}
+
+			pkgImports := astutil.PkgImportFromNode(node)
+
+			diPkgIdent, ok := DiPkgIdent(pkgImports)
+			if !ok {
+				continue
+			}
+
+			cSl := astutil.ContainerDeclFromNode(node, meta, diPkgIdent)
+			vSl := astutil.ValuefuncDeclFromNode(node, meta, diPkgIdent)
+
+			for _, f := range fSlice {
+				f(node, meta, cSl, vSl)
+			}
+
+		}
+	}
+
+	return nil
+}
+
 func VisitAST() {
 	roots, err := loader.LoadRoots("./test") // use "..." to load all packages
 	if err != nil {
@@ -75,7 +114,7 @@ func VisitAST() {
 			}
 
 			if len(cSl) > 0 {
-				continue
+				debug(cSl)
 			}
 		}
 	}

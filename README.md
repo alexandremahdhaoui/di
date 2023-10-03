@@ -2,7 +2,19 @@
 
 Simple dependency injection types for Go.
 
+
+# How to proceed from now?
+- Once we have the list of all ValueFunc/Container Declarations, we can make a graph of their usage.
+- What info are we interested with?
+  - Is a container built?
+  - Is a Value used then mutated?
+  - Is a Value used before being Set/Defined?
+  - Is Ptr() called on a Value after its container was built?
+  - Is Set() called on a Value after its container was built?
+  - Is Value() called on a Value before its container was built?
+
 # TODO
+
 
 di-check:
 - Use the `fset.Position(mthd.Pos()).Line` to give users the exact position where a Value is used/called...
@@ -11,7 +23,7 @@ di-check:
 Immutability:
 - Add a "Dirty" field to the di.Value[T]. This information will be used to mark if a Value can possibly be mutated.
   - E.g.: if container is in immature state (not built), the returned values will be marked as Dirty.
-  - Therefore, users can creates checks on the Value.
+  - Therefore, users can create checks on the Value.
 - Also, when a Value is taken from a Container, the Container or func returning the Value can mark the Value as "immutable"
 and prevent users from calling `Value.Ptr()`.
 - Deep copy with DI:
