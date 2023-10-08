@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Alexandre Mahdhaoui
+Copyright 2023 Alexandre Mahdhaoui.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,3 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
+// Package computationalgraph
+//
+// # I. Introduction
+//
+// Package computationalgraph is used to traverse an AST and build a graph of the simplified computation of the AST.
+//
+// # II. Usage
+//
+// Graphs yielded by this package can then be traversed to check e.g. that a di.Value is not used before being set.
+package computationalgraph

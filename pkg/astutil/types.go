@@ -16,7 +16,10 @@ limitations under the License.
 
 package astutil
 
-import "go/ast"
+import (
+	"go/ast"
+	"path/filepath"
+)
 
 type (
 	Ident string
@@ -48,6 +51,10 @@ type (
 		ObjRef ObjRef
 	}
 )
+
+func (m *Meta) PkgPath() string {
+	return filepath.Dir(m.Filepath)
+}
 
 func (i Ident) Exported() bool {
 	return ast.IsExported(string(i))

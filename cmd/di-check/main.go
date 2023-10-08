@@ -20,5 +20,5 @@ import (
 )
 
 func main() {
-	check.VisitAST()
+	check.VisitAST("./test")
 }

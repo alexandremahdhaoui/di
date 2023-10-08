@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"github.com/alexandremahdhaoui/di/pkg/astutil"
 	"github.com/alexandremahdhaoui/di/pkg/diutil"
+	"github.com/alexandremahdhaoui/graph"
+	"path/filepath"
 	"sigs.k8s.io/controller-tools/pkg/loader"
 )
 
@@ -42,47 +44,11 @@ func DiPkgIdent(pkgImports []astutil.PkgImport) (astutil.Ident, bool) {
 	return "", false
 }
 
-// VisitASTF will get pkg imports, Container, Valuefunc declarations and then execute a set of functions
-func VisitASTF(path string, fSlice []func()) error {
-	roots, err := loader.LoadRoots(path)
-	if err != nil {
-		return err
-	}
+func VisitAST(path string) {
+	localPackages := LocalPackages("./...")
+	debug(localPackages)
 
-	for _, root := range roots {
-		root.NeedTypesInfo()
-		root.NeedSyntax()
-
-		for i, file := range root.GoFiles {
-			node := root.Syntax[i]
-			meta := astutil.Meta{
-				Pkg:      root.Package.Name,
-				Filepath: file,
-				Module:   root.PkgPath,
-			}
-
-			pkgImports := astutil.PkgImportFromNode(node)
-
-			diPkgIdent, ok := DiPkgIdent(pkgImports)
-			if !ok {
-				continue
-			}
-
-			cSl := astutil.ContainerDeclFromNode(node, meta, diPkgIdent)
-			vSl := astutil.ValuefuncDeclFromNode(node, meta, diPkgIdent)
-
-			for _, f := range fSlice {
-				f(node, meta, cSl, vSl)
-			}
-
-		}
-	}
-
-	return nil
-}
-
-func VisitAST() {
-	roots, err := loader.LoadRoots("./test") // use "..." to load all packages
+	roots, err := loader.LoadRoots(path) // use "..." to load all packages
 	if err != nil {
 		panic(err)
 	}
@@ -119,3 +85,50 @@ func VisitAST() {
 		}
 	}
 }
+
+// LocalPackages returns a slice of available pkg definitions from the given []*loader.Package
+//
+// Usage:
+//
+//   - These LocalPackages are used when recursively traversing the tree of the given function (e.g. a main func) to
+//     know if a package is locally defined, and therefore subject to be traversed.
+//
+//   - If we encounter a function call with a local package ref, we will traverse that function and recursively perform
+//     the same operations on its sequence of statement.
+//     This operation will build a func relationship graph.
+func LocalPackages(path string) []astutil.Meta {
+	sl := make([]astutil.Meta, 0)
+
+	roots, err := loader.LoadRoots(path) // use "..." to load all packages
+	if err != nil {
+		panic(err)
+	}
+
+	for _, root := range roots {
+		sl = append(sl, astutil.Meta{
+			Pkg:      root.Package.Name,
+			Filepath: filepath.Dir(root.GoFiles[0]),
+			Module:   root.PkgPath,
+		})
+	}
+
+	return sl
+}
+
+// FuncRelationshipGraph traverses a given function and finds statement and expressions that refers to other function
+// calls in order to produce a slice of nodes and vertices.
+//
+// Each function is a node & each function call in a func is one of its vertices.
+// Vertices are ordered, by order of apparition in the func's body.
+//
+// Usage:
+//
+//	We will traverse that tree/graph to find if a di.Value was used before being Set, etc...
+func FuncRelationshipGraph() *graph.Node {
+
+}
+
+// DIRelationshipGraph traverses a given function to find any reference to a DI ValueFunc, di.Container or to a DI
+// Value.
+// We will also track Ident which have a di ValueFunc, di.Container or di.Value
+func DIRelationshipGraph() {}

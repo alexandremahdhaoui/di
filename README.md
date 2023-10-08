@@ -12,9 +12,11 @@ Simple dependency injection types for Go.
   - Is Ptr() called on a Value after its container was built?
   - Is Set() called on a Value after its container was built?
   - Is Value() called on a Value before its container was built?
+- Traverse a function:
+  - `di-check` will traverse e.g. a main() func and recursively traverse each calls made in that func to build a graph
+    of dependencies between all DI references, and also .
 
 # TODO
-
 
 di-check:
 - Use the `fset.Position(mthd.Pos()).Line` to give users the exact position where a Value is used/called...
