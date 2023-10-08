@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.3](https://github.com/alexandremahdhaoui/di/compare/v0.0.2...v0.0.3) (2023-10-08)
+
+
+### Bug Fixes
+
+* **main:** added computationalgraph package ([794af91](https://github.com/alexandremahdhaoui/di/commit/794af9141d7ea153e974d18dcdab7dfea0972748))
+
 ## [0.0.2](https://github.com/alexandremahdhaoui/di/compare/v0.0.1...v0.0.2) (2023-10-03)
 
 
