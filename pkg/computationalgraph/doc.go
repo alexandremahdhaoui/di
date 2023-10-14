@@ -23,4 +23,13 @@ limitations under the License.
 // # II. Usage
 //
 // Graphs yielded by this package can then be traversed to check e.g. that a di.Value is not used before being set.
+//
+// # III. Notes
+//
+//   - We can recursively traverse an AST to build the graph
+//
+//   - How do we mark/recognize that a func argument has a reference to a di.Value
+//
+//   - What if a di.Value is an attribute of a struct?
+//     We should be able to mark the struct as a holder of a reference to a di.Value
 package computationalgraph

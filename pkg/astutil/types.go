@@ -18,6 +18,7 @@ package astutil
 
 import (
 	"go/ast"
+	"go/token"
 	"path/filepath"
 )
 
@@ -31,6 +32,8 @@ type (
 		Filepath string
 		// Module in which the object is defined
 		Module string
+		// Pos where the token is defined
+		Pos token.Pos
 	}
 
 	ObjRef struct {
