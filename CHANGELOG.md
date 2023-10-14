@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.4](https://github.com/alexandremahdhaoui/di/compare/v0.0.3...v0.0.4) (2023-10-14)
+
+
+### Bug Fixes
+
+* added computationalgraph ([6243f21](https://github.com/alexandremahdhaoui/di/commit/6243f21e4a6fd3210978117cab92710e990cafa0))
+
 ## [0.0.3](https://github.com/alexandremahdhaoui/di/compare/v0.0.2...v0.0.3) (2023-10-08)
 
 
